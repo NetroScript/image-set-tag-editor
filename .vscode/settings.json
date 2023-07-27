@@ -107,5 +107,8 @@
 		"track",
 		"width",
 		"zIndex"
-	]
+	],
+	"rust-analyzer.linkedProjects": [
+        "./src-tauri/Cargo.toml"
+    ],
 }
