@@ -22,4 +22,8 @@ export function getAvailableFiles() {
     return invoke()<string[]>("get_available_files")
 }
 
+export function saveCaptions(captions: ([string, string])[]) {
+    return invoke()<null>("save_captions", { captions })
+}
+
 

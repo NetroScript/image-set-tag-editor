@@ -1,34 +1,41 @@
 <script lang="ts">
-
-	import { working_folder, available_images, is_loading_image_data, file_server_port } from '$lib/stores';
+	import {
+		working_folder,
+		available_images,
+		is_loading_image_data,
+		file_server_port
+	} from '$lib/stores';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { dragscroll } from '@svelte-put/dragscroll';
 	import type { Action } from 'svelte/action';
 	import { get } from 'svelte/store';
+	import PhArrowCircleLeftFill from '~icons/ph/arrow-circle-left-fill';
+	import PhArrowCircleRightFill from '~icons/ph/arrow-circle-right-fill';
 
 	$: current_file = 0;
 
-	$: current_image_url = `http://localhost:${$file_server_port}/${encodeURI($available_images[current_file].image)}`
+	$: current_image_url =
+		$available_images.length == 0
+			? ''
+			: `http://localhost:${$file_server_port}/${encodeURI($available_images[current_file].image)}`;
 	$: background_css_string = `background-image: url('${current_image_url}')`;
-	
 
 	const horizontalWheelScroll: Action = (node: HTMLElement) => {
-		node.style.scrollBehavior = "smooth";
+		node.style.scrollBehavior = 'smooth';
 
-		node.addEventListener("wheel", (evt) => {
+		node.addEventListener('wheel', (evt) => {
 			evt.preventDefault();
 			node.scrollLeft += evt.deltaY;
 		});
 
 		return {
 			destroy() {
-				node.removeEventListener("wheel", (evt) => {
+				node.removeEventListener('wheel', (evt) => {
 					evt.preventDefault();
 					node.scrollLeft += evt.deltaY;
 				});
-			},
+			}
 		};
-		
 	};
 
 	const nextImage = () => {
@@ -47,90 +54,142 @@
 		}
 	};
 
-	const keydownHandler = (evt: KeyboardEvent) => {
-		if (evt.key == "ArrowRight") {
+	const keydownHandler = (evt: KeyboardEvent, numpadOnly = false) => {
+		if (!numpadOnly) {
+			if (evt.key == 'ArrowRight') {
+				nextImage();
+			} else if (evt.key == 'ArrowLeft') {
+				previousImage();
+			}
+		}
+
+		// On numpad left and right also
+		if (evt.code == 'Numpad6') {
+			evt.preventDefault();
 			nextImage();
-		} else if (evt.key == "ArrowLeft") {
+		} else if (evt.code == 'Numpad4') {
+			evt.preventDefault();
 			previousImage();
 		}
 	};
 
+	is_loading_image_data.subscribe((value) => {
+		if (value == false && $available_images.length > 0) {
+			scrollToCurrentImage();
+			$available_images[current_file].viewed = true;
+		}
+	});
+
 	let scrollContainer: HTMLElement;
 
 	const scrollToCurrentImage = () => {
+		if ($available_images.length == 0 || !scrollContainer) return;
+
 		const element = scrollContainer.children[current_file] as HTMLElement;
 		scrollContainer.scrollTo({
 			left: element.offsetLeft - 500,
-			behavior: "smooth",
+			behavior: 'smooth'
 		});
 	};
-
 </script>
-
 
 <svelte:window on:keydown={keydownHandler} />
 
 {#if $working_folder.length == 0}
-
-<div class="container h-full mx-auto flex justify-center items-center">
-	
-	<div class="space-y-5 p-6">
-		<h1 class="h1 block flex-1">Select the directory you want to work in the sidebar.</h1>
+	<div class="container h-full mx-auto flex justify-center items-center">
+		<div class="space-y-5 p-6">
+			<h1 class="h1 block flex-1">Select the directory you want to work in the sidebar.</h1>
+		</div>
 	</div>
-</div>
-
 {:else if $is_loading_image_data}
-<div class="container h-full mx-auto flex justify-center items-center">
-	<div class="space-y-5 p-6 flex items-center flex-col">
-		<ProgressRadial value={undefined} class="flex-1" />
-		<h3 class="h3">Loading folder data.</h3>
+	<div class="container h-full mx-auto flex justify-center items-center">
+		<div class="space-y-5 p-6 flex items-center flex-col">
+			<ProgressRadial value={undefined} class="flex-1" />
+			<h3 class="h3">Loading folder data.</h3>
+		</div>
 	</div>
-</div>
-
-
+{:else if $available_images.length == 0}
+	<div class="container h-full mx-auto flex justify-center items-center">
+		<div class="space-y-5 p-6 flex items-center flex-col">
+			<h3 class="h3">No images found.</h3>
+		</div>
+	</div>
 {:else}
-
-
-<div class="h-full flex flex-col">
-
-	<div class="flex-1">
-		<div class="bg-contain w-full h-full bg-no-repeat bg-center" style={background_css_string}>
-
-		</div>
-	
-	</div>
-
-
-	<div class="px-2">
-		<label class="label">
-			<span>Caption</span>
-			<textarea class="textarea" rows="2" placeholder="Write your caption for the image here." bind:value={$available_images[current_file].caption}/>
-		</label>
-	</div>
-
-	<!-- Have a container at the bottom with all images selectable-->
-
-	<div class="w-full overflow-x-scroll h-[180px] flex overflow-y-hidden space-x-1" bind:this={scrollContainer} use:dragscroll use:horizontalWheelScroll>
-		{#each $available_images as image_data, index}
-
-		<div class="min-w-[150px] h-full cursor-pointer" class:visited={image_data.viewed} class:hightlighted={index == current_file} on:dblclick={() => {
-			current_file = index;
-			$available_images[index].viewed = true;
-		}}>
-			<img class="object-cover w-full h-full" src="http://localhost:{$file_server_port}/{image_data.image}" alt={image_data.caption}>
+	<div class="h-full flex flex-col">
+		<div class="flex-1">
+			<div
+				class="bg-contain w-full h-full bg-no-repeat bg-center flex items-center p-4"
+				style={background_css_string}
+			>
+				<div
+					class="left-0 items-center justify-center cursor-pointer text-5xl hover:scale-125 transition-all"
+					on:click={previousImage}
+					on:keydown={keydownHandler}
+				>
+					<PhArrowCircleLeftFill />
+				</div>
+				<div class="flex-1" />
+				<div
+					class="right-0 items-center justify-center cursor-pointer text-5xl hover:scale-125 transition-all"
+					on:click={nextImage}
+					on:keydown={keydownHandler}
+				>
+					<PhArrowCircleRightFill />
+				</div>
+			</div>
 		</div>
 
-		{/each}
+		<div class="px-2">
+			<label class="label">
+				<span
+					>Caption <div class="inline text-gray-500 italic">
+						({$available_images[current_file].image})
+					</div></span
+				>
+				<textarea
+					class="textarea"
+					on:keydown|stopPropagation={(event) => keydownHandler(event, true)}
+					rows="2"
+					placeholder="Write your caption for the image here."
+					bind:value={$available_images[current_file].caption}
+				/>
+			</label>
+		</div>
+
+		<!-- Have a container at the bottom with all images selectable-->
+
+		<div
+			class="w-full overflow-x-scroll h-[180px] flex overflow-y-hidden space-x-1"
+			bind:this={scrollContainer}
+			use:dragscroll
+			use:horizontalWheelScroll
+		>
+			{#each $available_images as image_data, index}
+				<div
+					class="min-w-[150px] h-full cursor-pointer"
+					class:visited={image_data.viewed}
+					class:hightlighted={index == current_file}
+					on:dblclick={() => {
+						current_file = index;
+						$available_images[index].viewed = true;
+					}}
+				>
+					<img
+						class="object-cover w-full h-full"
+						src="http://localhost:{$file_server_port}/{image_data.image}"
+						alt={image_data.caption}
+					/>
+				</div>
+			{/each}
+		</div>
 	</div>
-</div>
-
-
 {/if}
 
 <style>
 	.hightlighted {
 		border: 2px solid #eeeeee;
 		filter: brightness(1.2);
+		margin-top: 2px;
 	}
 
 	.visited {

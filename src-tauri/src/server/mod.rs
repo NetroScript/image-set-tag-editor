@@ -1,13 +1,12 @@
-
 use std::sync::Mutex;
 
-use tauri::AppHandle;
-use actix_files::NamedFile;
-use actix_web::{web, App, HttpServer, Result, middleware};
-use std::path::PathBuf;
-use actix_cors::Cors;
 use super::PORT;
 use super::SERVED_DIR;
+use actix_cors::Cors;
+use actix_files::NamedFile;
+use actix_web::{middleware, web, App, HttpServer, Result};
+use std::path::PathBuf;
+use tauri::AppHandle;
 
 struct TauriAppState {
     app: Mutex<AppHandle>,
@@ -21,7 +20,6 @@ pub async fn init(app: AppHandle) -> std::io::Result<()> {
 
     // Create server, bind it to any available port
     let server = HttpServer::new(move || {
-
         let cors = Cors::default().allow_any_origin().send_wildcard();
 
         // Additionally just return 200 if checkAlive as route is called
@@ -52,7 +50,6 @@ pub async fn init(app: AppHandle) -> std::io::Result<()> {
     server.run().await
 }
 
-
 async fn serve_file(path: web::Path<(String,)>) -> Result<NamedFile> {
     let directory = SERVED_DIR.read().unwrap();
     let file_path = PathBuf::from(&*directory).join(&path.0);
@@ -64,4 +61,3 @@ async fn serve_file(path: web::Path<(String,)>) -> Result<NamedFile> {
 
     Ok(NamedFile::open(file_path)?)
 }
-

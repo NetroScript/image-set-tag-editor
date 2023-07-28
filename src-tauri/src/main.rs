@@ -3,11 +3,11 @@
 
 mod server;
 
-use std::thread;
 use once_cell::sync::Lazy;
 use specta::collect_types;
 use std::env;
 use std::sync::{Arc, RwLock};
+use std::thread;
 use tauri_specta::ts;
 
 // Store where our files are served from
@@ -24,7 +24,16 @@ static PORT: Lazy<Arc<RwLock<Option<u16>>>> = Lazy::new(|| Arc::new(RwLock::new(
 
 fn main() {
     #[cfg(debug_assertions)]
-    ts::export(collect_types![select_folder, get_served_dir, get_available_files], "../src/lib/bindings.ts").unwrap();
+    ts::export(
+        collect_types![
+            select_folder,
+            get_served_dir,
+            get_available_files,
+            save_captions
+        ],
+        "../src/lib/bindings.ts",
+    )
+    .unwrap();
 
     // Run the server as long as tauri runs
 
@@ -38,7 +47,12 @@ fn main() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![select_folder, get_served_dir, get_available_files])
+        .invoke_handler(tauri::generate_handler![
+            select_folder,
+            get_served_dir,
+            get_available_files,
+            save_captions
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -64,7 +78,6 @@ async fn select_folder() -> Result<String, String> {
 
     // Save the path to the global variable
     if let Ok(path) = &path {
-
         let mut served_dir_write = SERVED_DIR.write().unwrap();
         *served_dir_write = path.clone();
 
@@ -83,7 +96,6 @@ async fn select_folder() -> Result<String, String> {
 
     path
 }
-
 
 // Expose a command to return the currently served directory, and the port number
 #[tauri::command]
@@ -119,7 +131,6 @@ async fn get_available_files() -> Result<Vec<String>, String> {
                     if path.is_dir() {
                         dir_queue.push(path);
                     } else if let Some(path_str) = path.to_str() {
-
                         // Only store the part of the path that is relative to the served directory
                         let path_str = path_str.replace(&served_dir, "");
                         // Also remove the leading slash (can also be a backslash on Windows)
@@ -138,4 +149,49 @@ async fn get_available_files() -> Result<Vec<String>, String> {
     }
 
     Ok(files)
+}
+
+// Expose a command to save captions, it takes an array of a path to the caption file, and the new caption content
+// We first check if it is a valid path which is inside the served directory, and then write the new content to the file replacing the old content
+#[tauri::command]
+#[specta::specta]
+async fn save_captions(captions: Vec<(String, String)>) -> Result<(), String> {
+    use std::fs;
+    use std::io::Write;
+    use std::path::PathBuf;
+
+    let served_dir = SERVED_DIR.read().unwrap().clone();
+
+    for caption in captions {
+        let path = PathBuf::from(&served_dir).join(&caption.0);
+
+        // Check if the path is inside the served directory, if not return an error
+        if !path.starts_with(&served_dir) {
+            return Err("Invalid path".to_string());
+        }
+
+        // Create the file if it doesn't exist yet
+        if !path.exists() {
+            match path.parent() {
+                Some(parent) => {
+                    fs::create_dir_all(parent).unwrap();
+                }
+                None => {
+                    return Err("Invalid path".to_string());
+                }
+            }
+        }
+
+        // Write the new caption content to the file
+        match fs::File::create(&path) {
+            Ok(mut file) => {
+                file.write_all(caption.1.as_bytes()).unwrap();
+            }
+            Err(_) => {
+                return Err("Error writing to file".to_string());
+            }
+        }
+    }
+
+    Ok(())
 }
