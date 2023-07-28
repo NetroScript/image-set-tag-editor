@@ -14,4 +14,12 @@ export function selectFolder() {
     return invoke()<string>("select_folder")
 }
 
+export function getServedDir() {
+    return invoke()<[string, number]>("get_served_dir")
+}
+
+export function getAvailableFiles() {
+    return invoke()<string[]>("get_available_files")
+}
+
 

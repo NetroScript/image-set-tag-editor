@@ -5,6 +5,7 @@ use tauri::AppHandle;
 use actix_files::NamedFile;
 use actix_web::{web, App, HttpServer, Result, middleware};
 use std::path::PathBuf;
+use actix_cors::Cors;
 use super::PORT;
 use super::SERVED_DIR;
 
@@ -20,9 +21,16 @@ pub async fn init(app: AppHandle) -> std::io::Result<()> {
 
     // Create server, bind it to any available port
     let server = HttpServer::new(move || {
+
+        let cors = Cors::default().allow_any_origin().send_wildcard();
+
+        // Additionally just return 200 if checkAlive as route is called
+
         App::new()
             .app_data(tauri_app.clone())
+            .wrap(cors)
             .wrap(middleware::Logger::default())
+            .route("/checkAlive", web::get().to(|| async { "OK" }))
             .service(web::resource("/{filename:.*}").route(web::get().to(serve_file)))
     })
     .bind("127.0.0.1:0")?;
@@ -56,3 +64,4 @@ async fn serve_file(path: web::Path<(String,)>) -> Result<NamedFile> {
 
     Ok(NamedFile::open(file_path)?)
 }
+
