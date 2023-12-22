@@ -1,12 +1,11 @@
 <script lang="ts">
-	// The ordering of these imports is critical to your app working properly
-	import '@skeletonlabs/skeleton/themes/theme-crimson.css';
-	// If you have source.organizeImports set to true in VSCode, then it will auto change this ordering
-	import '@skeletonlabs/skeleton/styles/skeleton.css';
 	// Most of your app wide CSS should be put in this file
 	import '../app.postcss';
 
-	import { AppShell, Toast, type ToastSettings } from '@skeletonlabs/skeleton';
+	import { Toast, getToastStore } from '@skeletonlabs/skeleton';
+	import type { ToastSettings, ToastStore } from '@skeletonlabs/skeleton';
+
+	import { AppShell } from '@skeletonlabs/skeleton';
 	import {
 		available_files,
 		available_images,
@@ -15,10 +14,14 @@
 		working_folder
 	} from '$lib/stores';
 	import { getAvailableFiles, getServedDir, selectFolder, saveCaptions } from '$lib/bindings';
-	import { toastStore } from '@skeletonlabs/skeleton';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import TagHelper from '$lib/components/TagHelper.svelte';
+	import { initializeStores } from '@skeletonlabs/skeleton';
+
+	initializeStores();
+
+	const toastStore = getToastStore();
 
 	async function select_new_folder() {
 		try {
