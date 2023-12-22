@@ -18,6 +18,7 @@
 	import { toastStore } from '@skeletonlabs/skeleton';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
+	import TagHelper from '$lib/components/TagHelper.svelte';
 
 	async function select_new_folder() {
 		try {
@@ -119,6 +120,10 @@
 					on:click={select_new_folder}>Change</button
 				>
 			</div>
+
+			<div class="flex-1" />
+
+			<TagHelper />
 
 			<div class="flex-1" />
 

@@ -3,7 +3,9 @@
 		working_folder,
 		available_images,
 		is_loading_image_data,
-		file_server_port
+		file_server_port,
+		current_caption,
+		active_image
 	} from '$lib/stores';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { dragscroll } from '@svelte-put/dragscroll';
@@ -91,6 +93,11 @@
 			behavior: 'smooth'
 		});
 	};
+
+	$: {
+		$current_caption = $available_images[current_file]?.caption || '';
+		$active_image = $available_images[current_file];
+	}
 </script>
 
 <svelte:window on:keydown={keydownHandler} />
@@ -141,18 +148,20 @@
 
 		<div class="px-2">
 			<label class="label">
-				<span
-					>Caption <div class="inline text-gray-500 italic">
-						({$available_images[current_file].image})
-					</div></span
-				>
-				<textarea
-					class="textarea"
-					on:keydown|stopPropagation={(event) => keydownHandler(event, true)}
-					rows="2"
-					placeholder="Write your caption for the image here."
-					bind:value={$available_images[current_file].caption}
-				/>
+				{#if $active_image}
+					<span
+						>Caption <div class="inline text-gray-500 italic">
+							({$active_image.image})
+						</div></span
+					>
+					<textarea
+						class="textarea"
+						on:keydown|stopPropagation={(event) => keydownHandler(event, true)}
+						rows="2"
+						placeholder="Write your caption for the image here."
+						bind:value={$active_image.caption}
+					/>
+				{/if}
 			</label>
 		</div>
 

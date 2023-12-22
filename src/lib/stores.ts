@@ -3,6 +3,7 @@ import { writable, derived, get } from 'svelte/store';
 export const working_folder = writable('');
 export const file_server_port = writable(0);
 export const available_files = writable<string[]>([]);
+export const single_tag_delimiter = writable(',');
 
 const VALID_IMAGE_FORMATS = ['.jpg', '.png', '.gif', '.bmp', '.webp', '.jpeg', '.avif'];
 
@@ -11,6 +12,37 @@ export const available_images = writable<
 	{ image: string; caption: string; caption_file: string; viewed: boolean }[]
 >([]);
 export const is_loading_image_data = writable(false);
+export const active_image = writable<
+	{ image: string; caption: string; caption_file: string; viewed: boolean } | undefined
+>(undefined);
+
+export const tagCounts = derived(
+	[available_images, single_tag_delimiter],
+	([$available_images, $single_tag_delimiter]) => {
+		console.log('counting tags');
+		const data: Record<string, number> = {};
+		$available_images.forEach((image) => {
+			const tags = (image.caption.split($single_tag_delimiter) || []).map(
+				(tag) => tag.trim() + get(single_tag_delimiter) // Ad the delimiter back for better searching, inserting and removing
+			);
+
+			tags.forEach((tag) => {
+				if (data[tag]) {
+					data[tag] += 1;
+				} else {
+					data[tag] = 1;
+				}
+			});
+		});
+		return data;
+	}
+);
+
+export const sortedTags = derived(tagCounts, ($tagCounts) => {
+	console.log('sorting tags');
+	return Object.keys($tagCounts).sort((a, b) => $tagCounts[b] - $tagCounts[a]);
+});
+export const current_caption = writable('');
 
 const update_available_files = async () => {
 	const image_map = new Map<
