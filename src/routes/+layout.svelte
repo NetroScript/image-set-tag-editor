@@ -2,13 +2,14 @@
 	// Most of your app wide CSS should be put in this file
 	import '../app.postcss';
 
-	import { Toast, getToastStore } from '@skeletonlabs/skeleton';
-	import type { ToastSettings, ToastStore } from '@skeletonlabs/skeleton';
+	import { Modal, Toast, getModalStore, getToastStore } from '@skeletonlabs/skeleton';
+	import type { ModalComponent, ToastSettings, ToastStore } from '@skeletonlabs/skeleton';
 
 	import { AppShell } from '@skeletonlabs/skeleton';
 	import {
 		available_files,
 		available_images,
+		custom_css_classes,
 		file_server_port,
 		is_loading_image_data,
 		working_folder
@@ -18,6 +19,7 @@
 	import { get } from 'svelte/store';
 	import TagHelper from '$lib/components/TagHelper.svelte';
 	import { initializeStores } from '@skeletonlabs/skeleton';
+	import ModalCustomCss from '$lib/components/ModalCustomCSS.svelte';
 
 	initializeStores();
 
@@ -87,8 +89,34 @@
 			console.error(e);
 		}
 	}
+
+	const modalRegistry: Record<string, ModalComponent> = {
+		// Set a unique modal ID, then pass the component reference
+		cssModal: { ref: ModalCustomCss }
+		// ...
+	};
+
+	const modalStore = getModalStore();
+
+	// Key even handler to open modal when pressing alt + c
+	const keyHandler = (event: KeyboardEvent) => {
+		if (event.altKey && event.key === 'c') {
+			modalStore.trigger({
+				type: 'component',
+				component: 'cssModal'
+			});
+		}
+	};
 </script>
 
+<svelte:head>
+	<!-- Dynamically insert a custom css style tag -->
+	<svelte:element this={'style'} type="text/css">{$custom_css_classes}</svelte:element>
+</svelte:head>
+
+<svelte:window on:keyup={keyHandler} />
+
+<Modal components={modalRegistry} />
 <AppShell>
 	<!-- (header) -->
 	<svelte:fragment slot="sidebarLeft">

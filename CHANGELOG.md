@@ -1,3 +1,17 @@
+## 0.1.2
+
+### Added
+
+* Calculate CLIP token count for the current caption
+* Add custom CSS by pressing `Alt + C`
+
+### Changed
+
+* Correct tag filtering with only excluding tags
+* Fixed removal and detection of tags (do not include seperator in tag name, instead operate on tag list)
+* Bumped package versions (both NodeJS and Rust)
+
+
 ## 0.1.1
 
 * Added automatic counting and adding and removing of individual reoccuring tags

@@ -23,7 +23,7 @@ export const tagCounts = derived(
 		const data: Record<string, number> = {};
 		$available_images.forEach((image) => {
 			const tags = (image.caption.split($single_tag_delimiter) || []).map(
-				(tag) => tag.trim() + get(single_tag_delimiter) // Ad the delimiter back for better searching, inserting and removing
+				(tag) => tag.trim()
 			);
 
 			tags.forEach((tag) => {
@@ -129,3 +129,7 @@ available_files.subscribe(async (files) => {
 	available_images.set(await update_available_files());
 	is_loading_image_data.set(false);
 });
+
+
+// Have a store for custom CSS classes if wanted 
+export const custom_css_classes = writable('');

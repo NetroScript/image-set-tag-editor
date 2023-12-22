@@ -26,4 +26,8 @@ export function saveCaptions(captions: ([string, string])[]) {
     return invoke()<null>("save_captions", { captions })
 }
 
+export function getTokenCounts(captions: string[]) {
+    return invoke()<number[]>("get_token_counts", { captions })
+}
+
 

@@ -9,6 +9,7 @@ use std::env;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use tauri_specta::ts;
+use instant_clip_tokenizer::{Token, Tokenizer};
 
 // Store where our files are served from
 static SERVED_DIR: Lazy<Arc<RwLock<String>>> = Lazy::new(|| {
@@ -29,7 +30,8 @@ fn main() {
             select_folder,
             get_served_dir,
             get_available_files,
-            save_captions
+            save_captions,
+            get_token_counts
         ],
         "../src/lib/bindings.ts",
     )
@@ -51,7 +53,8 @@ fn main() {
             select_folder,
             get_served_dir,
             get_available_files,
-            save_captions
+            save_captions,
+            get_token_counts
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -194,4 +197,24 @@ async fn save_captions(captions: Vec<(String, String)>) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+
+// Expose a command to get the count of tokens from a passed in string, to give an estimate of how many tokens the caption file uses
+#[tauri::command]
+#[specta::specta]
+async fn get_token_counts(captions: Vec<String>) -> Result<Vec<i32>, String> {
+    let tokenizer = Tokenizer::new();
+    let mut token_lengths: Vec<i32> = Vec::new();
+
+    for caption in captions {
+        let mut tokens = Vec::new();
+        tokenizer.encode(&caption, &mut tokens);
+        let tokens = tokens.into_iter().map(Token::to_u16).collect::<Vec<_>>();
+        // Convert usize to i32, as we can't send usize over the bridge to JavaScript
+        let length = tokens.len() as i32;
+        token_lengths.push(length);
+    }
+
+    Ok(token_lengths)
 }

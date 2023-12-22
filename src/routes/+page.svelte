@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTokenCounts } from '$lib/bindings';
 	import {
 		working_folder,
 		available_images,
@@ -94,9 +95,23 @@
 		});
 	};
 
+	let current_caption_token_length: number | null = null;
+	let calculating_caption_token_length = false;
+
 	$: {
 		$current_caption = $available_images[current_file]?.caption || '';
 		$active_image = $available_images[current_file];
+	}
+
+	$: {
+		if ($active_image) {
+			calculating_caption_token_length = true;
+
+			getTokenCounts([$active_image.caption]).then((data) => {
+				current_caption_token_length = data[0];
+				calculating_caption_token_length = false;
+			});
+		}
 	}
 </script>
 
@@ -152,8 +167,23 @@
 					<span
 						>Caption <div class="inline text-gray-500 italic">
 							({$active_image.image})
-						</div></span
-					>
+						</div>
+						<div class="text-primary-500 inline-flex align-middle items-center">
+							{#if calculating_caption_token_length}
+								<div class="inline w-6 h-6">
+									<ProgressRadial
+										value={undefined}
+										stroke={100}
+										width="w-6"
+										meter="stroke-primary-500"
+										track="stroke-primary-500/30"
+									/>
+								</div>
+							{:else}
+								Estimate: {current_caption_token_length} tokens
+							{/if}
+						</div>
+					</span>
 					<textarea
 						class="textarea"
 						on:keydown|stopPropagation={(event) => keydownHandler(event, true)}
